@@ -1,0 +1,2 @@
+java -classpath SQLeoVQB.jar com.sqleo.environment.SQLeoMacApp
+read -p "press any key to continue"

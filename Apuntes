@@ -1,0 +1,104 @@
+etc -> archivos de configuracion
+bin -> programas por defecto
+sbin -> programs por defecto del supersu
+lost+found -> ficheros perdidos encontrados
+boot -> kernel
+dev -> dispositivos
+usr -> todos los programas de usuario
+
+----------------------------------
+sudo mysqld_safe --skip-grant-tables &
+netstat -ant
+ps ax | grep mysql
+sudo killall mysqld
+sudo service mysqld stop
+update mysql.user set password = '123' where user = 'root' and host = 'localhost';
+sudo mysqld_safe --skip-grant-tables 
+
+SETENCIAS MYSQL
+update TABLA set ATRIBUTO = "VALOR" where ATRIBUTO ="VALOR";
+alter table TABLA modify ATRIBUTO char(20) not null;
+alter table TABLA add foreign key (ATRIBUTO A REFERENCIAR) references TABLA RE(ATRIBUTO RE) on update TIPOMOD; 
+
+Exportar:
+mysqldump -u root -p TABLA > NOMBRE
+
+
+Manejar base de datos:
+mysqladmin -u root -p create DATABASE
+mysqladmin -u root -p drop DATABASE
+
+
+PRODUCTO CARTESIANO 
+select * from t, u order by t.c desc;
+
+DNI
+select 'nico9a@gmail.uma@es.com' regexp '^[A-z]+[A-z\\._0-9\\-]*@[A-z0-9\\.]+.[A-z]{2,}$';
+
+
+select max(sMax) from (select sum(salario) sMax from jugador j1 group by equipo) as tDerivada;
+
+Mas partidos jugados:
+select elocal from (select elocal, count(*) as MAX from (select elocal from partido union all select evisitante from partido) as t1 group by elocal) as t2 where t2.MAX = (select max(MAXIMO) from (select elocal, count(*) as MAXIMO from (select elocal from partido union all select evisitante from partido) as t3 group by elocal) as t4);
+
+INNER JOIN
+select t1.at1, t2.at2 from t1 inner join t2 on t1.at1 = t2.at2
+
+INNER JOIN >> SUBCONSULTAS
+
+AVB
+select distinct nombre from equipo e where id = any(select elocal from partido p1 where p1.elocal != any(select evisitante from partido p2));
+
+
+A-B
+select distinct p.elocal from partido p inner join partido p2 on p.elocal not in (select p2.evisitante from partido p2);
+
+Añadir columna a una tabla:
+ alter table t add column d char(10) null;
+
+EN caso de duplicacion:
+Si hay conflicto 'hola' sino 'adios'.
+insert into t (c,d) values('x1','adios') on duplicate key update c= (select concat('e', '1')), d='hola';
+
+select period_diff(year(curdate()), year('2000-01-27')) - ((right (curdate(),5)) < (right('2000-01-27',5)));
+
+CAMBIAR CODIFICACION DOCUMENTO
+less direccion.txt | iconv -f utf8 -t latin1 > direccion_mal.txt
+
+VOLCADO DATABASE
+mysqldump -u root -p DB (tabla1 tabla2) > DB.dump
+
+INJECCION DATABASE
+mysql -u root -p DB < DB.dump Si el volcado tiene USE DB no hace falta poner DB 
+
+EXPORTAR A XML
+mysql -u root -p --xml -e 'select * from liga.jugador' > ligajugador1.sql
+
+IMPORTAR DESDE XML
+load xml local infile 'ligajugador1.sql'into table jugador;
+
+load xml local infile 'ejemplo_porvincia.xml'into table provincia rows indetified by '<prov>';	// Para introducir datos especificos
+
+Coches blancos y rojos
+Con join:
+select b.dni from (select dni from ventas where color="blanco") as b join (select dni from ventas where color ="rojo") as r on r.dni = b.dni;
+select dni, nombre, apellido from clientes c1 where (select count(color) from ventas v1 where color = 'blanco' and v1.dni = c1.dni) > 0 and (select count(color) from ventas v2 where color = 'rojo' and v2.dni = c1.dni)> 0;
+Con exists:
+select dni, nombre, apellido from clientes c1 where exists (select * from ventas v1 where color = 'blanco' and v1.dni = c1.dni) and exists (select * from ventas v2 where color = 'rojo' and v2.dni = c1.dni)> 0;
+--46
+select dni, nombre, apellido from clientes where ciudad = (select max(ciudad) from concesionario);
+--47
+select round(avg(cantidad),0) from distribucion group by cifc;
+
+HAVING
+--48
+select cifc from distribucion group by cifc having round(avg(cantidad), 0) = (select max(media) from (select round(avg(cantidad), 0) as media from distribucion group by cifc) as t1) and cifc not in (select cifc from concesionario where ciudad = "madrid");
+--48
+select codcoche from ventas v where exists (select * from concesionario c where ciudad <> "madrid" and v.cifc=c.cifc);
+--49
+select dni, nombre, apellido, ciudad from clientes c where exists (select cifc, dni, codcoche, color from ventas v where cifc = "0001" and v.dni=c.dni);
+--50
+select dni from clientes c where not exists (select * from ventas v where cifc != "0001" and c.dni=v.dni) and exists (select * from ventas v where cifc = "0001" and c.dni=v.dni);
+--53
+select distinct codcoche from ventas v1 where not exists (select * from clientes c where c.ciudad = "Madrid" and not exists (select * from ventas v2 where v1.codcoche = v2.codcoche and v2.dni = c.dni));
+

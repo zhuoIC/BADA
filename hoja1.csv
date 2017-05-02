@@ -1,0 +1,8 @@
+"#Factura";"IdCliente";"Nombre";"Telefono";"FechaNac"
+1;"CL001";"Cliente 1 Pérez";1111111;2001-02-12
+2;"CL002";"Cliente 2 Nuñez";2222222;2001-02-13
+3;"CL003";"Cliente 3";3333333;2001-02-14
+4;"CL004";"Cliente 4";4444444;2001-02-15
+5;"CL005";"Cliente 5";5555555;2001-02-16
+6;"CL006";"Cliente 6";6666666;2001-02-17
+7;"CL007";"Cliente 7";7777777;2001-02-18
