@@ -1,0 +1,60 @@
+PRAGMA foreign_keys = on;
+drop table if exists agendaDuenio;
+drop table if exists agendaArrendatario;
+drop table if exists alquiler;
+drop table if exists agenda;
+drop table if exists casa;
+drop table if exists duenio;
+drop table if exists arrendatario;
+create table arrendatario(
+	dni TEXT not null,
+	nombre TEXT not null,
+	primary key (dni));
+create table duenio(
+	dni TEXT not null,
+	nombre TEXT not null,
+	primary key (dni));
+create table casa(
+	id INTEGER not null,
+	direccion TEXT not null,
+	duenio TEXT not null,
+	primary key (id),
+	foreign key (duenio) references duenio (dni) on update cascade on delete restrict);
+create table agenda(
+	num INTEGER not null,
+	primary key(num));
+create table alquiler(
+	arrendatario TEXT not null,
+	casa INTEGER not null,
+	fechaD TEXT not null,
+	fechaH TEXT not null,
+	deuda INTEGER,
+	primary key (arrendatario, casa),
+	foreign key (arrendatario) references arrendatario (dni) on update cascade on delete restrict,
+	foreign key (casa) references casa (id) on update cascade on delete restrict);
+create table agendaArrendatario(
+	arrendatario TEXT not null,
+	telefono INTEGER not null,
+	primary key (arrendatario, telefono),
+	foreign key (arrendatario) references arrendatario (dni) on update cascade on delete restrict,
+	foreign key (num) references agenda (num) on update cascade on delete restrict);
+create table agendaDuenio(
+	duenio TEXT not null,
+	telefono INTEGER not null,
+	primary key (duenio, telefono),
+	foreign key (duenio) references duenio (dni) on update cascade on delete restrict,
+	foreign key (telefono) references agenda (num) on update cascade on delete restrict);
+create trigger bi_agenda 
+before insert on agenda
+BEGIN
+	select RAISE(abort, "Error")
+END;
+create trigger bi_alquiler 
+before insert on alquiler
+WHEN not exists (select arrendatar from alquiler when ())
+BEGIN
+	select RAISE(abort, "Error")
+END;
+
+
+
