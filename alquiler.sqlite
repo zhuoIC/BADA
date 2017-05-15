@@ -1,0 +1,59 @@
+drop table if exists agendaDuenio
+drop table if exists agendaArrendatario
+drop table if exists alquiler
+drop table if exists agenda
+drop table if exists duenio
+drop table if exists casa
+drop table if exists arrendatario
+create table arrendatario(
+	dni TEXT not null,
+	nombre TEXT not null,
+	primary key (dni))
+create table casa(
+	id INTEGER not null,
+	direccion TEXT not null,
+	dniDuenio TEXT not null,
+	primary key (id),
+	foreign key (dniDuenio) references duenio (dni) on update cascade on delete restrict)
+create table duenio(
+	dni TEXT not null,
+	nombre TEXT not null,
+	primary key (dni))
+create table agenda(
+	num INTEGER not null,
+	primary key(num))
+create table alquiler(
+	dniArrendatario TEXT not null,
+	idCasa INTEGER not null,
+	dniDueño TEXT not null,
+	fechaD TEXT not null,
+	fechaH TEXT not null,
+	deuda INTEGER,
+	primary key (id, dni),
+	foreign key (dniArrendatario) references arrendatario (dni) on update cascade on delete restrict,
+	foreign key (idCasa) references casa (id) on update cascade on delete restrict)
+create table alquiler(
+	dniArrendatario TEXT not null,
+	idCasa INTEGER not null,
+	fechaD TEXT not null,
+	fechaH TEXT not null,
+	deuda INTEGER,
+	primary key (dniArrendatario, idCasa),
+	foreign key (dniArrendatario) references arrendatario (dni) on update cascade on delete restrict,
+	foreign key (idCasa) references casa (id) on update cascade on delete restrict,
+	foreign key (dniDuenio) references duenio (dni) on update cascade on delete restrict)
+create table agendaArrendatario(
+	dniArrendatario TEXT not null,
+	num INTEGER not null,
+	primary key (dniArrendatario, num),
+	foreign key (dniArrendatario) references arrendatario (dni) on update cascade on delete restrict,
+	foreign key (num) references agenda (num) on update cascade on delete restrict)
+create table agendaDuenio(
+	dniDuenio TEXT not null,
+	num INTEGER not null,
+	primary key (dniDuenio, num),
+	foreign key (dniDuenio) references duenio (dni) on update cascade on delete restrict,
+	foreign key (num) references agenda (num) on update cascade on delete restrict)slite
+
+
+

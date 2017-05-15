@@ -7,40 +7,40 @@ drop table if exists casa;
 drop table if exists duenio;
 drop table if exists arrendatario;
 create table arrendatario(
-	dni TEXT not null,
-	nombre TEXT not null,
+	dni TEXT,
+	nombre TEXT,
 	primary key (dni));
 create table duenio(
-	dni TEXT not null,
-	nombre TEXT not null,
+	dni TEXT,
+	nombre TEXT,
 	primary key (dni));
 create table casa(
-	id INTEGER not null,
-	direccion TEXT not null,
+	id INTEGER not,
+	direccion TEXT,
 	duenio TEXT not null,
 	primary key (id),
 	foreign key (duenio) references duenio (dni) on update cascade on delete restrict);
 create table agenda(
-	num INTEGER not null,
+	num INTEGER ,
 	primary key(num));
 create table alquiler(
-	arrendatario TEXT not null,
-	casa INTEGER not null,
-	fechaD TEXT not null,
-	fechaH TEXT not null,
+	arrendatario TEXT,
+	casa INTEGER,
+	fechaD TEXT
+	fechaH TEXT,
 	deuda INTEGER,
 	primary key (arrendatario, casa),
 	foreign key (arrendatario) references arrendatario (dni) on update cascade on delete restrict,
 	foreign key (casa) references casa (id) on update cascade on delete restrict);
 create table agendaArrendatario(
-	arrendatario TEXT not null,
-	telefono INTEGER not null,
+	arrendatario TEXT,
+	telefono INTEGER,
 	primary key (arrendatario, telefono),
 	foreign key (arrendatario) references arrendatario (dni) on update cascade on delete restrict,
 	foreign key (num) references agenda (num) on update cascade on delete restrict);
 create table agendaDuenio(
-	duenio TEXT not null,
-	telefono INTEGER not null,
+	duenio TEXT,
+	telefono INTEGER,
 	primary key (duenio, telefono),
 	foreign key (duenio) references duenio (dni) on update cascade on delete restrict,
 	foreign key (telefono) references agenda (num) on update cascade on delete restrict);
@@ -49,12 +49,54 @@ before insert on agenda
 BEGIN
 	select RAISE(abort, "Error")
 END;
+
 create trigger bi_alquiler 
 before insert on alquiler
-WHEN not exists (select arrendatar from alquiler when ())
+for each row
 BEGIN
-	select RAISE(abort, "Error")
+	-- La fecha desde debe de ser menor que  hasta
+	select case when not date(new.fechaD) > date(new.fechaH) then
+		RAISE(abort, "Error")
+	select case when (select * from alquiler where new.fechaD < fechaD and new.fechaH >= fechaD and new.id = id) then
+		RAISE(abort, "Error")
+	select case when (select * from alquiler where new.fechaD >= fechaD and new.fechaH >= fechaD and new.id = id) then
+			RAISE(abort, "Error")
+	-- Moroso	
+	select case when (select new.dni in (select dni from alquiler where deuda > 0))
+	RAISE(abort, "Error")
 END;
 
+create trigger bu_alquiler 
+before update on alquiler
+for each row
+BEGIN
+	
+	-- La fecha desde debe de ser menor que la hasta
+	select case when date(new.fechaD) > date(new.fechaH) then
+		RAISE(abort, "Error")
+	else
+END;
+
+create trigger bi_arrendatario
+before insert on arrendatario
+for each row
+when new.nombre glob '*[0-9]*'
+BEGIN
+	
+
+	select RAISE(abort, "Error")
+	
+END;
+
+create trigger bu_arrendatario
+before update on arrendatario
+for each row
+when new.nombre glob '*[0-9]*'
+BEGIN
+	
+
+	select RAISE(abort, "Error")
+	
+END;
 
 
