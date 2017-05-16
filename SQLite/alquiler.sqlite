@@ -15,7 +15,7 @@ create table duenio(
 	nombre TEXT,
 	primary key (dni));
 create table casa(
-	id INTEGER not,
+	id INTEGER,
 	direccion TEXT,
 	duenio TEXT not null,
 	primary key (id),
@@ -37,18 +37,21 @@ create table agendaArrendatario(
 	telefono INTEGER,
 	primary key (arrendatario, telefono),
 	foreign key (arrendatario) references arrendatario (dni) on update cascade on delete restrict,
-	foreign key (num) references agenda (num) on update cascade on delete restrict);
+	foreign key (telefono) references agenda (num) on update cascade on delete restrict);
 create table agendaDuenio(
 	duenio TEXT,
 	telefono INTEGER,
 	primary key (duenio, telefono),
 	foreign key (duenio) references duenio (dni) on update cascade on delete restrict,
 	foreign key (telefono) references agenda (num) on update cascade on delete restrict);
+
+
 create trigger bi_agenda 
 before insert on agenda
+for each row
 BEGIN
 	select RAISE(abort, "Error")
-END;
+;END;
 
 create trigger bi_alquiler 
 before insert on alquiler
@@ -56,14 +59,18 @@ for each row
 BEGIN
 	-- La fecha desde debe de ser menor que  hasta
 	select case when not date(new.fechaD) > date(new.fechaH) then
-		RAISE(abort, "Error")
+		RAISE(abort, 'Error')
+	END;
 	select case when (select * from alquiler where new.fechaD < fechaD and new.fechaH >= fechaD and new.id = id) then
-		RAISE(abort, "Error")
+		RAISE(abort, 'Error')
+	END;
 	select case when (select * from alquiler where new.fechaD >= fechaD and new.fechaH >= fechaD and new.id = id) then
-			RAISE(abort, "Error")
+			RAISE(abort, 'Error')
+	END;
 	-- Moroso	
 	select case when (select new.dni in (select dni from alquiler where deuda > 0))
-	RAISE(abort, "Error")
+	RAISE(abort, 'Error')
+	END;
 END;
 
 create trigger bu_alquiler 
@@ -74,8 +81,7 @@ BEGIN
 	-- La fecha desde debe de ser menor que la hasta
 	select case when date(new.fechaD) > date(new.fechaH) then
 		RAISE(abort, "Error")
-	else
-END;
+;END;
 
 create trigger bi_arrendatario
 before insert on arrendatario
@@ -86,7 +92,7 @@ BEGIN
 
 	select RAISE(abort, "Error")
 	
-END;
+;END;
 
 create trigger bu_arrendatario
 before update on arrendatario
@@ -97,6 +103,6 @@ BEGIN
 
 	select RAISE(abort, "Error")
 	
-END;
+;END;
 
 
