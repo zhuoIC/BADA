@@ -67,7 +67,7 @@ BEGIN
 	select case when (select * from alquiler where new.fechaD >= fechaD and new.fechaH >= fechaD and new.id = id) then
 			RAISE(abort, 'Error')
 	END;
-	-- Moroso	
+	-- Moroso	0
 	select case when (select new.dni in (select dni from alquiler where deuda > 0))
 	RAISE(abort, 'Error')
 	END;
