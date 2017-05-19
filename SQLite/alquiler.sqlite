@@ -45,7 +45,7 @@ create table agendaDuenio(
 	foreign key (duenio) references duenio (dni) on update cascade on delete restrict,
 	foreign key (telefono) references agenda (num) on update cascade on delete restrict);
 
-
+drop trigger if exists bi_agenda;
 create trigger bi_agenda 
 before insert on agenda
 for each row
@@ -53,6 +53,7 @@ BEGIN
 	select RAISE(abort, "Error")
 ;END;
 
+drop trigger if exists bi_alquiler;
 create trigger bi_alquiler 
 before insert on alquiler
 for each row
@@ -73,6 +74,7 @@ BEGIN
 	END;
 END;
 
+drop trigger if exists bu_alquiler 
 create trigger bu_alquiler 
 before update on alquiler
 for each row
@@ -83,6 +85,7 @@ BEGIN
 		RAISE(abort, "Error")
 ;END;
 
+drop trigger if exists bi_arrendatario
 create trigger bi_arrendatario
 before insert on arrendatario
 for each row
@@ -94,6 +97,7 @@ BEGIN
 	
 ;END;
 
+drop trigger if exists bu_arrendatario
 create trigger bu_arrendatario
 before update on arrendatario
 for each row
