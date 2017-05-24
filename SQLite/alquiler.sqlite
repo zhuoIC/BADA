@@ -15,7 +15,7 @@ create table duenio(
 	nombre TEXT,
 	primary key (dni));
 create table casa(
-	id INTEGER,
+	id INTEGER, -- 1. Toda casa tiene un único dueño.
 	direccion TEXT,
 	duenio TEXT not null,
 	primary key (id),
@@ -50,23 +50,31 @@ create trigger bi_alquiler
 before insert on alquiler
 for each row
 BEGIN
-	-- La fecha desde debe de ser menor que la fecha hasta
-	select case when date(new.fechaD) > date(new.fechaH) then
-		RAISE(abort, 'Error')
+	-- 2b. La fecha final debe ser al menos un día posterior a la fecha inicial del alquiler.
+	select case when not date(new.fechaD) < date(new.fechaH) then
+		RAISE(abort, 'La fecha desde debe de ser menor que la fecha hasta')
 	END;
-    -- 2.La fecha de un nuevo alquiler de vivienda no puede estar en el pasado.
-	select case when not date(new.fechaD) > date('now') and not date(new.fechaH) > date(new.fechaD) then
-		RAISE(abort, 'La fecha de un nuevo alquiler de vivienda no puede estar en el pasado.')
+    -- 2a. La fecha de un nuevo alquiler de vivienda no puede estar en el pasado. 
+	select case when not date(new.fechaD) >= date('now') then
+		RAISE(abort, 'La fecha desde debe de estar en el futuro')
 	END;
-/*
-	select case when (select * from alquiler where date(new.fechaD) >= date(fechaD) and date(new.fechaH) >= date(fechaD) and new.casa = casa) then
-			RAISE(abort, 'Error')
+    -- 3. Una casa no puede estar alquilada por más de un arrendatario en el mismo período de tiempo.
+	select case when exists (select * from alquiler where new.fechaD <= fechaH and new.fechaD >= fechaD and new.casa = casa) then
+		RAISE(abort, 'No se puede alquilar una casa cuando ya está alquilada')
+	END;
+    -- 3. Una casa no puede estar alquilada por más de un arrendatario en el mismo período de tiempo.
+	select case when exists (select * from alquiler where new.fechaH >= fechaD and new.fechaH <= fechaD and new.casa = casa) then
+			RAISE(abort, 'No se puede alquilar una casa cuando la fecha hasta sobrepasa la fecha desde de un nuevo alquiler')
+	END;
+    -- 3. Una casa no puede estar alquilada por más de un arrendatario en el mismo período de tiempo.
+	select case when exists (select * from alquiler where new.fechaD < fechaD and new.fechaH > fechaH and new.casa = casa) then
+			RAISE(abort, 'No se puede alquilar una casa cuando la duracion del alquiler incluye la de otro')
 	END;
 	-- 4. Un arrendatario no puede alquilar una casa si tiene alguna deuda pendiente.
-	select case when (select new.dni in (select dni from alquiler where deuda > 0)) then
+	select case when exists (select new.arrendatario from alquiler where deuda > 0 and new.arrendatario = arrendatario) then
 	    RAISE(abort, 'Un arrendatario no puede alquilar una casa si tiene alguna deuda pendiente')
 	END;
-*/
+
 END;
 
 drop trigger if exists bu_alquiler;
@@ -74,19 +82,25 @@ create trigger bu_alquiler
 before update on alquiler
 for each row
 BEGIN
-	-- La fecha desde debe de ser menor que la fecha hasta
-	select case when not date(new.fechaD) > date(new.fechaH) then
-		RAISE(abort, 'Error')
+	-- 2b. La fecha final debe ser al menos un día posterior a la fecha inicial del alquiler.
+	select case when not date(new.fechaD) < date(new.fechaH) then
+		RAISE(abort, 'La fecha desde debe de ser menor que la fecha hasta')
 	END;
-	select case when (select * from alquiler where new.fechaD < fechaD and new.fechaH >= fechaD and new.id = id) then
-		RAISE(abort, 'Error')
+    -- 2a. La fecha de un nuevo alquiler de vivienda no puede estar en el pasado. 
+	select case when not date(new.fechaD) >= date('now') then
+		RAISE(abort, 'La fecha desde debe de estar en el futuro')
 	END;
-	select case when (select * from alquiler where new.fechaD >= fechaD and new.fechaH >= fechaD and new.id = id) then
-			RAISE(abort, 'Error')
+    -- 3. Una casa no puede estar alquilada por más de un arrendatario en el mismo período de tiempo.
+	select case when exists (select * from alquiler where new.fechaD <= fechaH and new.fechaD >= fechaD and new.casa = casa) then
+		RAISE(abort, 'No se puede alquilar una casa cuando ya está alquilada')
 	END;
-	-- 4. Un arrendatario no puede alquilar una casa si tiene alguna deuda pendiente.
-	select case when (select new.dni in (select dni from alquiler where deuda > 0)) then
-	    RAISE(abort, 'Error')
+    -- 3. Una casa no puede estar alquilada por más de un arrendatario en el mismo período de tiempo.
+	select case when exists (select * from alquiler where new.fechaH >= fechaD and new.fechaH <= fechaD and new.casa = casa) then
+			RAISE(abort, 'No se puede alquilar una casa cuando la fecha hasta sobrepasa la fecha desde de un nuevo alquiler')
+	END;
+    -- 3. Una casa no puede estar alquilada por más de un arrendatario en el mismo período de tiempo.
+	select case when exists (select * from alquiler where new.fechaD < fechaD and new.fechaH > fechaH and new.casa = casa) then
+			RAISE(abort, 'No se puede alquilar una casa cuando la duracion del alquiler incluye la de otro')
 	END;
 END;
 
@@ -171,18 +185,21 @@ insert into agendaDuenio (duenio, telefono) values ('68645572V', '798546137');
 insert into agendaDuenio (duenio, telefono) values ('68645572C', '798546138');
 insert into agendaDuenio (duenio, telefono) values ('68645572X', '798546139');
 
-insert into alquiler (arrendatario, casa, fechaD, fechaH, deuda) values ('28645572N', '05', '2017-09-01', '2017-10-01', 10);
-insert into alquiler (arrendatario, casa, fechaD, fechaH, deuda) values ('38645572N', '05', '2017-07-01', '2017-08-01', 200);
-insert into alquiler (arrendatario, casa, fechaD, fechaH, deuda) values ('48645572N', '03', '2017-12-01', '2018-10-01', 100);
+insert into alquiler (arrendatario, casa, fechaD, fechaH, deuda) values ('28645572N', '05', '2017-09-01', '2017-10-01', 0);
+insert into alquiler (arrendatario, casa, fechaD, fechaH, deuda) values ('38645572N', '05', '2017-07-01', '2017-08-01', 0);
+insert into alquiler (arrendatario, casa, fechaD, fechaH, deuda) values ('48645572N', '03', '2017-12-01', '2018-10-01', 0);
 
 -- 1.Obtener los arrendatarios que alquilan la casa de calle Cómpeta, 28, 1C
 select dni, nombre from arrendatario where dni in (select arrendatario from alquiler where casa in (select id from casa where direccion glob 'calle Cómpeta, 28, 1C'));
 -- 2.¿Cuánto dinero le deben a María Pérez?
-select sum(deuda) from alquiler where casa in (select id from casa where duenio in (select dni from duenio where nombre glob 'María Pérez'));
+select sum(deuda) as deuda from alquiler where casa in (select id from casa where duenio in (select dni from duenio where nombre glob 'María Pérez'));
 -- 3.¿Cuál es la deuda total para cada dueño?
+select d.nombre, sum(deuda) as deuda from alquiler a join casa c on c.id = a.casa join duenio d on c.duenio = d.dni group by d.nombre;
 -- 4.Listar todas las personas que hay dadas de alta en la base de datos.
+select dni, nombre from duenio union select dni, nombre from arrendatario;
 -- 5.Indica los dueños que poseen tres o más casas (con / sin usar agregaciones)
 select d.dni, d.nombre from casa c join duenio d on c.duenio = d.dni group by c.duenio having count(*) >= 3;
 -- 6.Listar los dueños que tengan deudores en todas sus casas.
+select * from duenio d where not exists (select * from casa c where not exists (select * from alquiler a where deuda = 0 and c.id = casa) and d.dni = c.duenio) and d.dni in (select duenio from casa);
 
 
