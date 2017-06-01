@@ -1,8 +1,0 @@
-drop procedure if exists holaMundo;
-create procedure holaMundo()
-begin
-	select 'hola Mundo desde mariadb';
-
-
-
-end;
