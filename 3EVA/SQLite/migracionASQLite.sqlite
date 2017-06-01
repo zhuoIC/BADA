@@ -1,0 +1,55 @@
+PRAGMA foreign_keys = on;
+drop table if exists distribucion;
+drop table if exists ventas;
+drop table if exists coches;
+drop table if exists concesionario;
+drop table if exists marcas;
+drop table if exists clientes;
+create table clientes(
+	dni TEXT NOT NULL PRIMARY KEY,
+	nombre TEXT NOT NULL,
+	apellido TEXT NOT NULL,
+	ciudad TEXT NOT NULL);
+
+create table marcas(
+	cifm TEXT NOT NULL PRIMARY KEY,
+	nombre TEXT NOT NULL,
+	ciudad TEXT NOT NULL);
+
+create table concesionario(
+	cifc TEXT NOT NULL PRIMARY KEY,
+	nombre TEXT NOT NULL,
+	ciudad TEXT NOT NULL);
+
+create table coches(
+	codcoche TEXT NOT NULL PRIMARY KEY,
+	cifm TEXT NOT NULL REFERENCES marcas (cifm) on update cascade on delete restrict,
+	nombre TEXT NOT NULL,
+	modelo TEXT NOT NULL);
+
+create table ventas(
+	cifc TEXT NOT NULL,
+	dni TEXT NOT NULL,
+	codcoche TEXT NOT NULL,
+	color TEXT NOT NULL,
+	PRIMARY KEY (cifc, dni, codcoche),
+	FOREIGN KEY (cifc) REFERENCES concesionario (cifc) on update cascade on delete restrict,
+	FOREIGN KEY (dni) REFERENCES clientes (dni) on update cascade on delete restrict,
+	FOREIGN KEY (codcoche) REFERENCES coches (codcoche) on update cascade on delete restrict);
+
+create table distribucion(
+	cifc TEXT NOT NULL,
+	codcoche TEXT NOT NULL ,
+	cantidad INTEGER NOT NULL,
+	PRIMARY KEY (cifc, codcoche),
+	FOREIGN KEY (cifc) REFERENCES concesionario (cifc) on update cascade on delete restrict,
+	FOREIGN KEY (codcoche) REFERENCES coches (codcoche) on update cascade on delete restrict);
+.mode tabs
+.import clientes.csv clientes
+.import marcas.csv marcas
+.import concesionario.csv concesionario
+.import coches.csv coches
+.import ventas.csv ventas
+.import distribucion.csv distribucion
+
+

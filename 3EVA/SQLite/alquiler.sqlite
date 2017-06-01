@@ -1,0 +1,205 @@
+PRAGMA foreign_keys = on;
+drop table if exists agendaDuenio;
+drop table if exists agendaArrendatario;
+drop table if exists alquiler;
+drop table if exists agenda;
+drop table if exists casa;
+drop table if exists duenio;
+drop table if exists arrendatario;
+create table arrendatario(
+	dni TEXT,
+	nombre TEXT,
+	primary key (dni));
+create table duenio(
+	dni TEXT,
+	nombre TEXT,
+	primary key (dni));
+create table casa(
+	id INTEGER, -- 1. Toda casa tiene un único dueño.
+	direccion TEXT,
+	duenio TEXT not null,
+	primary key (id),
+	foreign key (duenio) references duenio (dni) on update cascade on delete restrict);
+create table agenda(
+	num INTEGER ,
+	primary key(num));
+create table alquiler(
+	arrendatario TEXT,
+	casa INTEGER,
+	fechaD TEXT,
+	fechaH TEXT,
+	deuda INTEGER,
+	primary key (arrendatario, casa),
+	foreign key (arrendatario) references arrendatario (dni) on update cascade on delete restrict,
+	foreign key (casa) references casa (id) on update cascade on delete restrict);
+create table agendaArrendatario(
+	arrendatario TEXT,
+	telefono INTEGER,
+	primary key (arrendatario, telefono),
+	foreign key (arrendatario) references arrendatario (dni) on update cascade on delete restrict,
+	foreign key (telefono) references agenda (num) on update cascade on delete restrict);
+create table agendaDuenio(
+	duenio TEXT,
+	telefono INTEGER,
+	primary key (duenio, telefono),
+	foreign key (duenio) references duenio (dni) on update cascade on delete restrict,
+	foreign key (telefono) references agenda (num) on update cascade on delete restrict);
+
+drop trigger if exists bi_alquiler;
+create trigger bi_alquiler 
+before insert on alquiler
+for each row
+BEGIN
+	-- 2b. La fecha final debe ser al menos un día posterior a la fecha inicial del alquiler.
+	select case when not date(new.fechaD) < date(new.fechaH) then
+		RAISE(abort, 'La fecha desde debe de ser menor que la fecha hasta')
+	END;
+    -- 2a. La fecha de un nuevo alquiler de vivienda no puede estar en el pasado. 
+	select case when not date(new.fechaD) >= date('now') then
+		RAISE(abort, 'La fecha desde debe de estar en el futuro')
+	END;
+    -- 3. Una casa no puede estar alquilada por más de un arrendatario en el mismo período de tiempo.
+	select case when exists (select * from alquiler where new.fechaD <= fechaH and new.fechaD >= fechaD and new.casa = casa) then
+		RAISE(abort, 'No se puede alquilar una casa cuando ya está alquilada')
+	END;
+    -- 3. Una casa no puede estar alquilada por más de un arrendatario en el mismo período de tiempo.
+	select case when exists (select * from alquiler where new.fechaH >= fechaD and new.fechaH <= fechaD and new.casa = casa) then
+			RAISE(abort, 'No se puede alquilar una casa cuando la fecha hasta sobrepasa la fecha desde de un nuevo alquiler')
+	END;
+    -- 3. Una casa no puede estar alquilada por más de un arrendatario en el mismo período de tiempo.
+	select case when exists (select * from alquiler where new.fechaD < fechaD and new.fechaH > fechaH and new.casa = casa) then
+			RAISE(abort, 'No se puede alquilar una casa cuando la duracion del alquiler incluye la de otro')
+	END;
+	-- 4. Un arrendatario no puede alquilar una casa si tiene alguna deuda pendiente.
+	select case when exists (select new.arrendatario from alquiler where deuda > 0 and new.arrendatario = arrendatario) then
+	    RAISE(abort, 'Un arrendatario no puede alquilar una casa si tiene alguna deuda pendiente')
+	END;
+
+END;
+
+drop trigger if exists bu_alquiler;
+create trigger bu_alquiler 
+before update on alquiler
+for each row
+BEGIN
+	-- 2b. La fecha final debe ser al menos un día posterior a la fecha inicial del alquiler.
+	select case when not date(new.fechaD) < date(new.fechaH) then
+		RAISE(abort, 'La fecha desde debe de ser menor que la fecha hasta')
+	END;
+    -- 2a. La fecha de un nuevo alquiler de vivienda no puede estar en el pasado. 
+	select case when not date(new.fechaD) >= date('now') then
+		RAISE(abort, 'La fecha desde debe de estar en el futuro')
+	END;
+    -- 3. Una casa no puede estar alquilada por más de un arrendatario en el mismo período de tiempo.
+	select case when exists (select * from alquiler where new.fechaD <= fechaH and new.fechaD >= fechaD and new.casa = casa) then
+		RAISE(abort, 'No se puede alquilar una casa cuando ya está alquilada')
+	END;
+    -- 3. Una casa no puede estar alquilada por más de un arrendatario en el mismo período de tiempo.
+	select case when exists (select * from alquiler where new.fechaH >= fechaD and new.fechaH <= fechaD and new.casa = casa) then
+			RAISE(abort, 'No se puede alquilar una casa cuando la fecha hasta sobrepasa la fecha desde de un nuevo alquiler')
+	END;
+    -- 3. Una casa no puede estar alquilada por más de un arrendatario en el mismo período de tiempo.
+	select case when exists (select * from alquiler where new.fechaD < fechaD and new.fechaH > fechaH and new.casa = casa) then
+			RAISE(abort, 'No se puede alquilar una casa cuando la duracion del alquiler incluye la de otro')
+	END;
+END;
+
+-- 5a. El nombre de un arrendatario no puede contener números.
+drop trigger if exists bi_arrendatario;
+create trigger bi_arrendatario
+before insert on arrendatario
+for each row
+when new.nombre glob '*[0-9]*'
+BEGIN
+	select RAISE(abort, "El nombre de un arrendatario no puede contener números");
+END;
+
+drop trigger if exists bu_arrendatario;
+create trigger bu_arrendatario
+before update on arrendatario
+for each row
+when new.nombre glob '*[0-9]*'
+BEGIN
+	select RAISE(abort, "El nombre de un arrendatario no puede contener números");
+END;
+
+-- 5b. El nombre de un dueño no puede contener números.
+drop trigger if exists bi_duenio;
+create trigger bi_duenio
+before insert on duenio
+for each row
+when new.nombre glob '*[0-9]*'
+BEGIN
+	select RAISE(abort, "El nombre de un dueño no puede contener números");
+END;
+
+drop trigger if exists bu_duenio;
+create trigger bu_duenio
+before update on duenio
+for each row
+when new.nombre glob '*[0-9]*'
+BEGIN
+	select RAISE(abort, "El nombre de un dueño no puede contener números");
+END;
+
+-- Consultas
+
+insert into arrendatario (dni, nombre) values ('28645572N', 'Luis');
+insert into arrendatario (dni, nombre) values ('38645572N', 'Jose');
+insert into arrendatario (dni, nombre) values ('48645572N', 'Paula');
+insert into arrendatario (dni, nombre) values ('58645572N', 'Reme');
+insert into arrendatario (dni, nombre) values ('68645572N', 'Victor');
+
+insert into duenio (dni, nombre) values ('68645572N', 'Paco');
+insert into duenio (dni, nombre) values ('68645572B', 'Manolo');
+insert into duenio (dni, nombre) values ('68645572V', 'María Pérez');
+insert into duenio (dni, nombre) values ('68645572C', 'Natalia');
+insert into duenio (dni, nombre) values ('68645572X', 'Rodrigo');
+
+insert into agenda (num) values (798546130);
+insert into agenda (num) values (798546131);
+insert into agenda (num) values (798546132);
+insert into agenda (num) values (798546133);
+insert into agenda (num) values (798546134);
+insert into agenda (num) values (798546135);
+insert into agenda (num) values (798546136);
+insert into agenda (num) values (798546137);
+insert into agenda (num) values (798546138);
+insert into agenda (num) values (798546139);
+
+insert into casa (id, direccion, duenio) values ('01', 'Calle Larios', '68645572N');
+insert into casa (id, direccion, duenio) values ('02', 'Calle Competa', '68645572N');
+insert into casa (id, direccion, duenio) values ('03', 'calle Cómpeta, 28, 1C', '68645572B');
+insert into casa (id, direccion, duenio) values ('04', 'Calle Mostoles', '68645572C');
+insert into casa (id, direccion, duenio) values ('05', 'Calle Jardin', '68645572V');
+
+insert into agendaArrendatario (arrendatario, telefono) values ('28645572N', '798546130');
+insert into agendaArrendatario (arrendatario, telefono) values ('38645572N', '798546131');
+insert into agendaArrendatario (arrendatario, telefono) values ('48645572N', '798546132');
+insert into agendaArrendatario (arrendatario, telefono) values ('58645572N', '798546133');
+insert into agendaArrendatario (arrendatario, telefono) values ('68645572N', '798546134');
+
+insert into agendaDuenio (duenio, telefono) values ('68645572N', '798546135');
+insert into agendaDuenio (duenio, telefono) values ('68645572B', '798546136');
+insert into agendaDuenio (duenio, telefono) values ('68645572V', '798546137');
+insert into agendaDuenio (duenio, telefono) values ('68645572C', '798546138');
+insert into agendaDuenio (duenio, telefono) values ('68645572X', '798546139');
+
+insert into alquiler (arrendatario, casa, fechaD, fechaH, deuda) values ('28645572N', '05', '2017-09-01', '2017-10-01', 0);
+insert into alquiler (arrendatario, casa, fechaD, fechaH, deuda) values ('38645572N', '05', '2017-07-01', '2017-08-01', 0);
+insert into alquiler (arrendatario, casa, fechaD, fechaH, deuda) values ('48645572N', '03', '2017-12-01', '2018-10-01', 0);
+
+-- 1.Obtener los arrendatarios que alquilan la casa de calle Cómpeta, 28, 1C
+select dni, nombre from arrendatario where dni in (select arrendatario from alquiler where casa in (select id from casa where direccion glob 'calle Cómpeta, 28, 1C'));
+-- 2.¿Cuánto dinero le deben a María Pérez?
+select sum(deuda) as deuda from alquiler where casa in (select id from casa where duenio in (select dni from duenio where nombre glob 'María Pérez'));
+-- 3.¿Cuál es la deuda total para cada dueño?
+select d.nombre, sum(deuda) as deuda from alquiler a join casa c on c.id = a.casa join duenio d on c.duenio = d.dni group by d.nombre;
+-- 4.Listar todas las personas que hay dadas de alta en la base de datos.
+select dni, nombre from duenio union select dni, nombre from arrendatario;
+-- 5.Indica los dueños que poseen tres o más casas (con / sin usar agregaciones)
+select d.dni, d.nombre from casa c join duenio d on c.duenio = d.dni group by c.duenio having count(*) >= 3;
+-- 6.Listar los dueños que tengan deudores en todas sus casas.
+select * from duenio d where not exists (select * from casa c where not exists (select * from alquiler a where deuda = 0 and c.id = casa) and d.dni = c.duenio) and d.dni in (select duenio from casa);
+
+
